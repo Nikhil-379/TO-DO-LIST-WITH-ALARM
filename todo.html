@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List with Alarm</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            margin: 50px; 
+            background: url('background.jpg') no-repeat center center fixed; 
+            background-size: cover; 
+            color: black; 
+        }
+        .container { max-width: 500px; margin: auto; padding: 20px; border-radius: 10px; }
+        input, button { padding: 10px; margin: 10px; }
+        ul { list-style-type: none; padding: 0; }
+        li { padding: 10px; background: rgba(255, 255, 255, 0.8); margin-top: 5px; display: flex; justify-content: space-between; align-items: center; border-radius: 5px; }
+        .delete { color: red; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>To-Do List with Alarm</h2>
+        <input type="text" id="taskInput" placeholder="Add a new task">
+        <input type="datetime-local" id="taskTime">
+        <select id="alarmSoundSelect">
+            <option value="sound1">Beep</option>
+            <option value="sound2">Chime</option>
+            <option value="sound3">Bell</option>
+        </select>
+        <button onclick="addTask()">Add</button>
+        <ul id="taskList"></ul>
+    </div>
+    <audio id="sound1" src="mixkit-alert-alarm-1005.wav"></audio>
+    <audio id="sound2" src="mixkit-classic-alarm-995.wav"></audio>
+    <audio id="sound3" src="mixkit-digital-clock-digital-alarm-buzzer-992.wavmixkit-classic-alarm-995.wav"></audio>
+    <script>
+        document.addEventListener("DOMContentLoaded", loadTasks);
+
+        function addTask() {
+            let taskInput = document.getElementById("taskInput");
+            let taskTime = document.getElementById("taskTime");
+            let selectedSound = document.getElementById("alarmSoundSelect").value;
+            let task = taskInput.value.trim();
+            let time = taskTime.value;
+            if (task === "" || time === "") return;
+
+            let taskList = document.getElementById("taskList");
+            let li = document.createElement("li");
+            li.innerHTML = `<input type='checkbox' onchange='checkTask(this)'> ${task} - ${time} <span class='delete' onclick='removeTask(this)'>✖</span> <input type='hidden' value='${selectedSound}'>`;
+            taskList.appendChild(li);
+
+            saveTasks();
+            taskInput.value = "";
+            taskTime.value = "";
+            scheduleAlarm(time, selectedSound);
+        }
+
+        function removeTask(element) {
+            element.parentElement.remove();
+            saveTasks();
+        }
+
+        function checkTask(checkbox) {
+            if (checkbox.checked) {
+                checkbox.parentElement.style.textDecoration = "line-through";
+            } else {
+                checkbox.parentElement.style.textDecoration = "none";
+            }
+        }
+
+        function saveTasks() {
+            let tasks = [];
+            document.querySelectorAll("#taskList li").forEach(li => {
+                tasks.push({
+                    text: li.textContent.replace("✖", "").trim(),
+                    completed: li.querySelector("input[type=checkbox]").checked,
+                    sound: li.querySelector("input[type=hidden]").value
+                });
+            });
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+        }
+
+        function loadTasks() {
+            let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+            let taskList = document.getElementById("taskList");
+            tasks.forEach(taskObj => {
+                let li = document.createElement("li");
+                li.innerHTML = `<input type='checkbox' onchange='checkTask(this)' ${taskObj.completed ? "checked" : ""}> ${taskObj.text} <span class='delete' onclick='removeTask(this)'>✖</span> <input type='hidden' value='${taskObj.sound}'>`;
+                taskList.appendChild(li);
+                if (taskObj.completed) {
+                    li.style.textDecoration = "line-through";
+                }
+            });
+        }
+
+        function scheduleAlarm(time, soundId) {
+            let alarmTime = new Date(time).getTime();
+            let now = new Date().getTime();
+            let delay = alarmTime - now;
+            if (delay > 0) {
+                setTimeout(() => {
+                    document.getElementById(soundId).play();
+                    alert("Time for your task!");
+                }, delay);
+            }
+        }
+    </script>
+</body>
+</html>
